@@ -1,0 +1,198 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Ruang Sahabat Azizi (RSA)</title>
+    <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
+        body { background-color: #f0f2f5; display: flex; justify-content: center; align-items: center; height: 100vh; }
+        .app-container { width: 360px; height: 640px; background-color: white; border-radius: 20px; box-shadow: 0 10px 30px rgba(0,0,0,0.1); overflow: hidden; display: flex; flex-direction: column; position: relative; }
+        
+        /* Header */
+        .header { background-color: #008080; color: white; padding: 20px; text-align: center; border-bottom-left-radius: 15px; border-bottom-right-radius: 15px; }
+        .header h1 { font-size: 1.2rem; margin-bottom: 5px; }
+        .header p { font-size: 0.8rem; opacity: 0.8; }
+        
+        /* Main Menu */
+        .menu-screen { padding: 20px; flex: 1; display: flex; flex-direction: column; gap: 15px; }
+        .menu-btn { background-color: #f8f9fa; border: 1px solid #ddd; padding: 15px; border-radius: 12px; font-weight: bold; color: #333; cursor: pointer; display: flex; align-items: center; gap: 10px; transition: 0.3s; }
+        .menu-btn:hover { background-color: #e2e6ea; }
+        .btn-sos { background-color: #ff4d4d; color: white; border: none; text-align: center; justify-content: center; margin-top: auto; }
+        
+        /* Chat Screen (Bilik Cerita) */
+        .chat-screen { display: none; flex-direction: column; height: 100%; background: #e5ddd5; }
+        .chat-header { background: #008080; color: white; padding: 15px; display: flex; align-items: center; gap: 10px; }
+        .back-btn { background: none; border: none; color: white; font-size: 1.5rem; cursor: pointer; }
+        .chat-box { flex: 1; padding: 15px; overflow-y: auto; display: flex; flex-direction: column; gap: 10px; }
+        .message { max-width: 80%; padding: 10px 15px; border-radius: 15px; font-size: 0.9rem; word-wrap: break-word; }
+        .msg-system { background: #fff; align-self: flex-start; border-bottom-left-radius: 2px; }
+        .msg-user { background: #dcf8c6; align-self: flex-end; border-bottom-right-radius: 2px; }
+        
+        /* Input Area */
+        .input-area { padding: 10px; background: white; display: flex; gap: 10px; }
+        .input-area input { flex: 1; padding: 10px; border: 1px solid #ddd; border-radius: 20px; outline: none; }
+        .input-area button { background: #008080; color: white; border: none; padding: 10px 15px; border-radius: 20px; cursor: pointer; }
+    </style>
+</head>
+<body>
+
+<div class="app-container">
+    
+    <!-- TAMPILAN MENU UTAMA -->
+    <div id="mainMenu" class="menu-screen" style="display: flex;">
+        <div class="header">
+            <h1>Ruang Sahabat Azizi</h1>
+            <p>Aman, Nyaman, dan Rahasia 100%</p>
+        </div>
+        <p style="text-align: center; font-size: 0.9rem; color: #666; margin-top: 10px;">Halo, Siswa SMK Nur Azizi!</p>
+        
+        <button class="menu-btn" onclick="openChat()">💬 Bilik Cerita (Curhat Anonim)</button>
+        <button class="menu-btn" onclick="alert('Fitur Kotak Aspirasi sedang dalam tahap pengembangan.')">📬 Kotak Aspirasi Sekolah</button>
+        <button class="menu-btn" onclick="alert('Fitur Pojok Edukasi GenRe sedang disiapkan.')">📚 Pojok Edukasi (GenRe)</button>
+        
+        <button class="menu-btn btn-sos" onclick="alert('SOS Aktif! Notifikasi darurat dikirim ke Guru BK.')">🚨 TOMBOL DARURAT (SOS)</button>
+    </div>
+
+    <!-- TAMPILAN BILIK CERITA (CHAT) -->
+    <div id="chatScreen" class="chat-screen">
+        <div class="chat-header">
+            <button class="back-btn" onclick="closeChat()">←</button>
+            <div>
+                <h3 style="font-size: 1rem;">Konselor PIK-R</h3>
+                <span style="font-size: 0.75rem;">Mode Anonim Aktif 🔒</span>
+            </div>
+            <!-- Tombol Pengaman Privasi Siswa -->
+            <button onclick="clearAllChat()" style="background: #ff4d4d; color: white; border: none; padding: 5px 10px; border-radius: 8px; font-size: 0.75rem; cursor: pointer; margin-left: auto; font-weight: bold;">
+                🧹 Hapus Chat
+            </button>
+        </div>
+        
+        <div id="chatBox" class="chat-box">
+            <div class="message msg-system">Halo! Aku konselor sebayamu. Ruang ini 100% rahasia dan aman. Ada yang ingin kamu ceritakan hari ini?</div>
+        </div>
+        
+        <div class="input-area">
+            <input type="text" id="userInput" placeholder="Ketik pesanmu di sini..." onkeypress="handleKeyPress(event)">
+            <button onclick="sendMessage()">Kirim</button>
+        </div>
+    </div>
+
+</div>
+
+<script>
+    const STORAGE_CHAT_KEY = "rsa_chat_history";
+    const STORAGE_SCREEN_KEY = "rsa_current_screen";
+
+    window.onload = function() {
+        loadChatHistory();
+        restoreScreenState();
+    };
+
+    function openChat() {
+        document.getElementById('mainMenu').style.display = 'none';
+        document.getElementById('chatScreen').style.display = 'flex';
+        localStorage.setItem(STORAGE_SCREEN_KEY, 'chat');
+    }
+
+    function closeChat() {
+        document.getElementById('chatScreen').style.display = 'none';
+        document.getElementById('mainMenu').style.display = 'flex';
+        localStorage.setItem(STORAGE_SCREEN_KEY, 'menu');
+    }
+
+    function restoreScreenState() {
+        const currentScreen = localStorage.getItem(STORAGE_SCREEN_KEY);
+        if (currentScreen === 'chat') {
+            openChat();
+        } else {
+            closeChat();
+        }
+    }
+
+    function sendMessage() {
+        const inputField = document.getElementById('userInput');
+        const messageText = inputField.value.trim();
+
+        if (messageText !== "") {
+            appendMessage(messageText, 'user');
+            saveMessageToStorage(messageText, 'user');
+            
+            inputField.value = "";
+
+            showTypingIndicator();
+
+            setTimeout(() => {
+                removeTypingIndicator();
+                const replyText = "Terima kasih sudah berbagi. Kami siap mendengarkan lebih lanjut. Tetap tenang, kamu berada di ruang yang aman.";
+                appendMessage(replyText, 'system');
+                saveMessageToStorage(replyText, 'system');
+            }, 1200);
+        }
+    }
+
+    function appendMessage(text, sender) {
+        const chatBox = document.getElementById('chatBox');
+        const msgDiv = document.createElement('div');
+        msgDiv.className = `message msg-${sender}`;
+        msgDiv.textContent = text;
+        chatBox.appendChild(msgDiv);
+        chatBox.scrollTop = chatBox.scrollHeight;
+    }
+
+    function saveMessageToStorage(text, sender) {
+        let history = JSON.parse(localStorage.getItem(STORAGE_CHAT_KEY)) || [];
+        history.push({ text: text, sender: sender });
+        localStorage.setItem(STORAGE_CHAT_KEY, JSON.stringify(history));
+    }
+
+    function loadChatHistory() {
+        const history = JSON.parse(localStorage.getItem(STORAGE_CHAT_KEY));
+        if (history && history.length > 0) {
+            const chatBox = document.getElementById('chatBox');
+            chatBox.innerHTML = "";
+            
+            history.forEach(msg => {
+                appendMessage(msg.text, msg.sender);
+            });
+        }
+    }
+
+    function showTypingIndicator() {
+        const chatBox = document.getElementById('chatBox');
+        if (!document.getElementById('typingIndicator')) {
+            const indicator = document.createElement('div');
+            indicator.className = 'message msg-system';
+            indicator.id = 'typingIndicator';
+            indicator.style.fontStyle = 'italic';
+            indicator.style.color = '#888';
+            indicator.textContent = "Konselor sedang mengetik...";
+            chatBox.appendChild(indicator);
+            chatBox.scrollTop = chatBox.scrollHeight;
+        }
+    }
+
+    function removeTypingIndicator() {
+        const indicator = document.getElementById('typingIndicator');
+        if (indicator) {
+            indicator.remove();
+        }
+    }
+
+    function clearAllChat() {
+        if (confirm("Apakah kamu yakin ingin menghapus seluruh riwayat obrolan ini demi privasimu?")) {
+            localStorage.removeItem(STORAGE_CHAT_KEY);
+            const chatBox = document.getElementById('chatBox');
+            chatBox.innerHTML = '<div class="message msg-system">Riwayat chat telah dihapus permanen. Ada yang ingin kamu ceritakan lagi?</div>';
+        }
+    }
+
+    function handleKeyPress(event) {
+        if (event.key === 'Enter') {
+            sendMessage();
+        }
+    }
+</script>
+
+</body>
+</html>
